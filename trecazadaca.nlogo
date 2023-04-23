@@ -7,7 +7,11 @@ turtles-own [
               shopping-pos
               shopping-cart
               templist
-              cords
+              next_coords
+              next_x-pos
+              next_y-pos
+  n
+  d
             ]
 
 to setup
@@ -31,7 +35,7 @@ to setup
     set shopping-cart []
     set model []
     ; stvaranje popisa za kupovinu
-    set shopping-list ["Green" "Orange" "Blue" "Red"]
+    set shopping-list ["Orange" "Yellow" "Grey" "White" "Green" "Orange" "Blue" "Red"]
     setxy -8 -6
     set heading 90
     set templist[]
@@ -155,15 +159,29 @@ end
 
 
 
-
-
 ; agentska funkcija koja omogućava kretanje po trgovini
 to walk
    set shopping-pos (item 0 model)
   set x-pos (item 0 shopping-pos)
   set y-pos (item 1 shopping-pos)
+  set n 1
+  set d 0
+    while [n < length model ][
+  set next_coords (item n model)
+  set next_x-pos (item 0 next_coords)
+  set next_y-pos (item 1 next_coords)
 
-  wait 1
+
+    if (distancexy x-pos y-pos)>(distancexy next_x-pos next_y-pos)[
+    set shopping-pos (item n model)
+    set x-pos next_x-pos
+    set y-pos next_y-pos
+      set d n
+    ]
+    set n (n + 1)
+  ]
+
+  wait 0.5
   facexy x-pos y-pos
   ifelse (distancexy x-pos y-pos) > 1
   [
@@ -178,7 +196,7 @@ to walk
      if (member? "Orange" shopping-list) and not (member? "Orange" templist)[
       show "Item found!"
       wait 1
-      set model remove-item 0 model
+      set model remove-item d model
       set templist lput "Orange" templist
       set pcolor black
       show templist
@@ -190,7 +208,7 @@ to walk
      if (member? "Red" shopping-list) and not (member? "Red" templist)[
       show "Item found!"
       wait 1
-        set model remove-item 0 model
+        set model remove-item d model
       set templist lput "Red" templist
       set pcolor black
         show templist
@@ -202,7 +220,7 @@ to walk
      if (member? "Green" shopping-list) and not (member? "Green" templist)[
       show "Item found!"
       wait 1
-      set model remove-item 0 model
+      set model remove-item d model
       set templist lput "Green" templist
       set pcolor black
       show templist
@@ -214,7 +232,7 @@ to walk
    if (member? "Blue" shopping-list) and not (member? "Blue" templist)[
       show "Item found!"
       wait 1
-      set model remove-item 0 model
+      set model remove-item d model
       set templist lput "Blue" templist
       set pcolor black
       show templist
@@ -226,8 +244,8 @@ to walk
    if (member? "Grey" shopping-list) and not (member? "Grey" templist)[
       show "Item found!"
       wait 1
-      set model remove-item 0 model
-      set templist lput "Blue" templist
+      set model remove-item d model
+      set templist lput "Grey" templist
       set pcolor black
       show templist
     ]
@@ -238,8 +256,8 @@ to walk
    if (member? "Yellow" shopping-list) and not (member? "Yellow" templist)[
       show "Item found!"
       wait 1
-      set model remove-item 0 model
-      set templist lput "Blue" templist
+      set model remove-item d model
+      set templist lput "Yellow" templist
       set pcolor black
       show templist
     ]
@@ -250,8 +268,8 @@ to walk
    if (member? "White" shopping-list) and not (member? "White" templist)[
       show "Item found!"
       wait 1
-      set model remove-item 0 model
-      set templist lput "Blue" templist
+      set model remove-item d model
+      set templist lput "White" templist
       set pcolor black
       show templist
     ]
@@ -262,7 +280,6 @@ to walk
     show "Done"
   ]
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 210

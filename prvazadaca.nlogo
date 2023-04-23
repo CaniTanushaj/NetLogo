@@ -86,6 +86,7 @@ end
 ; funkcija usisivača kojom čisti
 to clean
   set n  1
+  set d 0
    set coords (item 0 model)
   set x-pos (item 0 coords)
   set y-pos (item 1 coords)
