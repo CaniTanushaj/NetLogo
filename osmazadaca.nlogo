@@ -1,128 +1,154 @@
-globals [ new-products products badx bady history stop-flag]
-                         ;; globalne varijable za brojanje zapocetih i dovrsenih
-                         ;; proizvoda i za poziciju "odlaganja" neisprevnih proizvoda
-                         ;; lista povijesti opazanja i zastaviza za prekid proizvodnje
+globals [ samples1
+          templist
+          cords
+          coords
+  x-pos
+              y-pos
+
+              next_coords
+              next_x-pos
+              next_y-pos
+              n
+              d
+            cur_color
+]
 
 to setup
-  clear-all              ;; briše sve postavke iz prethodnih pokušaja
-  set new-products 0         ;; postavlja broj dovrsenih proizvoda na 0
-  set products 0         ;; postavlja broj proizvoda na 0
-  set stop-flag FALSE    ;; postavlja se zastavica za prekid na FALSE
-  set badx 6
-  set bady 5             ;; postavlja koordinate za odlaganje neispravnog proizvoda
-  set history []         ;; kreira se prazna list opazanja
-
-  ask patch 6 6
+  clear-all
+  clear-output
+  create-turtles 2
   [
-    set pcolor green     ;; signalno svjetlo se postavlja na zelenu boju
+    set samples1 []
+  ]                      ;; kreiraju se 2 rovera
+  set cords[]
+  ask turtle 0
+  [
+    set color brown
+    setxy -8 -6          ;; prvi rover se postavlja u donju lijevu celiju
+    set heading 90       ;; i okrece udesno
   ]
 
-  draw-track             ;; crta se proizvodna traka
+  ask turtle 1
+  [
+    set color green
+    setxy 8 6            ;; drugi rover se postavlja u gornju desnu celiju
+    set heading 270      ;; i okrece ulijevo
+  ]
+
+  ;; postavljanje "stijena" u okružanju
+  ask n-of 5 patches [ set pcolor orange ]
+  ask n-of 5 patches [ set pcolor red ]
+  ask n-of 5 patches [ set pcolor blue ]
   reset-ticks
 end
 
 to go
-  ifelse not stop-flag
-  [
-    ask turtles
-    [
-      walk               ;; pokrece se funkcija za pomicanje proizvoda po traci
-    ]
-
-    if(ticks mod 30 = 0 and ticks > 20)[
-   new-product
-    ]
-
-
-    set history sort history
-                         ;; sortira se povijest opazanja kako bi 0 (neispravni proizvodi)
-                         ;; dosli na pocetak
-    check-history        ;; funkcija provjere povijesti opazanja
-    if (products = 30)
-                         ;; serija proizvoda sadrži 30 proizvoda
-    [
-      show "Success!"       ;; ukoliko je manje od 10% neispravnih serija je uspjela
-      stop
-    ]
+  if ([xcor] of turtle 0 = 8) and ([ycor] of turtle 0 = 6)
+  [ stop ]
+  ask turtle 0 [ walk1 ]            ;; pokrece se funkcija walk1 za prvi rover
+  ask turtle 1 [ walk2 ]            ;; pokrece se funkcija walk2 za drugi rover
     tick
-  ]
-  [
-    stop
-  ]
 end
 
-to walk                  ;; funkcija pomicanja proizvoda po traci
-  if ycor = -3           ;; ako je proizvod na traci
+to walk1  ;; funkcija prvog rovera
+  set templist[]
+  if ([pcolor] of patch-here = orange)
   [
-    ifelse xcor = 6      ;; ako je proizvod dosao do kraja trake
+    if not (member? "Orange" samples1 )
     [
-      set products products + 1
-      ifelse color = red
-                         ;; neispravan proizvod se "odlaze"
-      [
-        set history lput 0 history
-                         ;; opazanje se dodaje u listu povijesti opazanja
-        setxy badx bady
-        ifelse bady = -1
-        [
-          set badx badx - 1
-          set bady 5
-        ]
-        [
-          set bady bady - 1
-        ]
-      ]
-      [
-        set history lput 1 history
-                         ;; opazanje se dodaje u listu povijesti opazanja
-        die              ;; ispravan proizvod se uklanja sa ekrana
-      ]
-    ]
-    [
-      fd 1               ;; ako proizvod nije na kraju trake pomice se
+      set samples1 lput "Orange" samples1
+      print ( word "Orange sample found at coordinates " xcor " i " ycor)
+      set templist lput orange templist
+      get-cords
     ]
   ]
-end
-
-to new-product
-  create-turtles 1       ;; kreira se jedan agent (proizvod)
+ ;;prvi rover ne može percipirati crvenu stijenu
+  if ([pcolor] of patch-here = red)
   [
-    set color one-of remove gray base-colors
-                         ;; daje mu se neka od osnovnih boja osim sive
-    set new-products new-products + 1
-                         ;; broji se zapoceti proizvod
-    type "New product No. " type new-products print ""
-    set shape "crate"    ;; daje mu se oblik sanduka
-    setxy -6 -3          ;; postavlja na pocetak trake
-    set heading 90       ;; i okrece udesno
+   if not (member? "Red" samples1 )
+   [
+     set samples1 lput "Red" samples1
+     print ( word "Red sample found at coordinates " xcor " i " ycor)
+      set templist lput red templist
+      get-cords
+   ]
   ]
-end
-
-to draw-track
-  ask patches at-points [[-6 -3] [-5 -3] [-4 -3] [-3 -3] [-2 -3] [-1 -3] [0 -3] [1 -3] [2 -3] [3 -3] [4 -3] [5 -3] [6 -3]] [ set pcolor grey ]
-end
-
-to check-history
-  if length history > 3   ;; ako je u listi barem tri opazanja
+  if ([pcolor] of patch-here = blue)
   [
-    if (item 3 history = 0)
-                          ;; ako je trece (indeks 2) opazanje u sortiranoj listi 0,
-                          ;; tj. neispravan proizvod
+    if not (member? "Blue" samples1 )
     [
-      ask patch 6 6
-      [
-        set pcolor red    ;; signalno svjetlo se postavlja na crvenu boju
-      ]
-      show "Fail"         ;; ukoliko je 10% i vise neispravnih serija nije uspjela
-      set stop-flag TRUE  ;; postavlja se zastavica zaustavljanja na TRUE
+      set samples1 lput "Blue" samples1
+      print ( word "Blue sample found at coordinates " xcor " i " ycor)
+      set templist lput blue templist
+      get-cords
     ]
   ]
+  ifelse (xcor = 8) and (heading = 90)
+  [
+    ifelse (ycor = 8)
+    [
+      show "Done"
+    ]
+    [
+      set heading 0
+      fd 1
+      set heading 270
+    ]
+  ]
+  [
+    ifelse (xcor = -8) and (heading = 270)
+    [
+      set heading 0
+      fd 1
+      set heading 90
+    ]
+    [
+      fd 1
+    ]
+  ]
+end
+
+to walk2  ;; funkcija drugog rovera
+   set n  1
+  set d 0
+
+  ifelse(length(cords)  != 0  )[
+   set coords (item 0 cords)
+  set x-pos (item 1 coords)
+  set y-pos (item 2 coords)
+    set cur_color item 0 coords
+
+  facexy x-pos y-pos
+  ifelse (distancexy x-pos y-pos) > 1
+  [
+    fd 1
+  ]
+  [
+    fd distancexy x-pos y-pos
+  show xcor
+  show x-pos
+  if ([pcolor] of patch-here = cur_color) and (xcor - x-pos < 0.1)
+  [
+    show "Picking up sample"
+    set cords remove-item 0 cords
+    show cords
+  ]
+  ]]
+    [rt 10]
+end
+
+
+to get-cords
+set templist lput xcor templist
+      set templist lput ycor templist
+      set cords lput templist cords
+  show cords
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
 10
-608
+728
 409
 -1
 -1
@@ -133,24 +159,24 @@ GRAPHICS-WINDOW
 1
 1
 0
+0
+0
 1
-1
-1
--6
-6
+-8
+8
 -6
 6
 0
 0
 1
 ticks
-10.0
+30.0
 
 BUTTON
-15
-59
-78
-92
+25
+74
+88
+107
 setup
 setup
 NIL
@@ -164,11 +190,11 @@ NIL
 1
 
 BUTTON
-88
-60
-151
-93
-NIL
+99
+74
+162
+107
+go
 go
 T
 1
@@ -180,41 +206,13 @@ NIL
 NIL
 1
 
-BUTTON
-36
-105
-137
-138
-new product
-new-product
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 @#$#@#$#@
-## OPIS MODELA
+## OPIS PRIMJERA
+U ovom primjeru je ponovno opisan rad agenata koji upravljaju roverima na Marsu, a svaki od njih ima zadatak prikupljanje uzoraka određenih stijena. Roveri se kreću unaprijed definiranim putanjama i ukoliko naiđu na stijenu odgovarajuće vrste, uzimaju njen uzorak.  
 
-Primjer simulira rad agenta koji nadgleda proizvodnu traku i proizvode na njoj. 
-
-Pritiskom na tipku *new product* na traci se pojavljuje novi proizvod.
-
-Agent registira neispravne proizvode (obojene crvenom bojom) i ispraven proizvode (obojene nekom drugom bojom) kada dođu do kraja proizvodne trake. Ispravni proizvodi se uklanjaju sa ekrana, a neispravni zadržavaju na ekranu.
-
-Seriju proizvoda čini 30 proizvoda i ako je manje od 10% proizvoda neispravno serija se smatra uspješnom, a ako je 10% ili više neispravnih proizvoda serija se smatra. neuspješnom.   
-
-## VRSTA OKRUŽENJA
-Po kriteriju **epizodičnosti** ovo okruženje je **sekvencijalno** jer buduće odluke agenta ovise o akcijama koje je agent prethodno poduzeo, odnosno trenutna akcija ima dugoročne posljedice.
-
-U ovom primjeru zaustavlja se proizvodnja u trenutku kad je serija označena kao neispravna (10% neispravnih proizvoda).  
-
-## KAKO KORISTITI MODEL
-Potrebno je podesiti brzinu izmjene otkucaja (klizač *ticks* iznad prozora simulacije) kako bi se mogla pratiti simulacija.
+## VRSTA INTERAKCIJE
+Ciljevi agenata su kompatibilni a količina raspoloživih resursa u okruženju je dovoljna za sve agente. Za razliku od prethodnog primjera, sposobnosti pojedinih agenata nisu dovoljne da pojedinačno ostvare svoj cilj. Mogu ga ostvariti samo suradnjom.
+Ovaj tip interakcije je jednostavna suradnja. Jednostavna suradnja sastoji se od jednostavnog zbrajanja vještina pojedinih agenata, bez zahtjeva za dodatnim aktivnostima koordinacije među uključenim agentima.
 @#$#@#$#@
 default
 true
@@ -289,20 +287,6 @@ false
 Polygon -7500403 true true 200 193 197 249 179 249 177 196 166 187 140 189 93 191 78 179 72 211 49 209 48 181 37 149 25 120 25 89 45 72 103 84 179 75 198 76 252 64 272 81 293 103 285 121 255 121 242 118 224 167
 Polygon -7500403 true true 73 210 86 251 62 249 48 208
 Polygon -7500403 true true 25 114 16 195 9 204 23 213 25 200 39 123
-
-crate
-false
-0
-Rectangle -7500403 true true 45 45 255 255
-Rectangle -16777216 false false 45 45 255 255
-Rectangle -16777216 false false 60 60 240 240
-Line -16777216 false 180 60 180 240
-Line -16777216 false 150 60 150 240
-Line -16777216 false 120 60 120 240
-Line -16777216 false 210 60 210 240
-Line -16777216 false 90 60 90 240
-Polygon -7500403 true true 75 240 240 75 240 60 225 60 60 225 60 240
-Polygon -16777216 false false 60 225 60 240 75 240 240 75 240 60 225 60
 
 cylinder
 false
@@ -508,13 +492,6 @@ Polygon -10899396 true false 105 90 75 75 55 75 40 89 31 108 39 124 60 105 75 10
 Polygon -10899396 true false 132 85 134 64 107 51 108 17 150 2 192 18 192 52 169 65 172 87
 Polygon -10899396 true false 85 204 60 233 54 254 72 266 85 252 107 210
 Polygon -7500403 true true 119 75 179 75 209 101 224 135 220 225 175 261 128 261 81 224 74 135 88 99
-
-vacuum
-true
-0
-Polygon -7500403 true true 30 135 150 135 240 135 255 225 240 225 210 225 210 195 210 225 135 225 135 225 135 225 135 225 90 225 90 195 60 195 60 225 15 225 30 135
-Circle -13345367 true false 45 180 60
-Circle -13345367 true false 165 180 60
 
 wheel
 false
