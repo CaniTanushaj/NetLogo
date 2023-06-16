@@ -1,5 +1,4 @@
-globals [ food
-  food2
+globals [
           templist
           cords
           coords
@@ -14,170 +13,202 @@ globals [ food
             cur_color
   randx
   randy
+  randz
+
 ]
 
-breed [zeleni zelen]
-breed [smedji smedj]
+breed[predators predator]
+breed[preys prey]
 
+preys-own[caught]
 
 to setup
   clear-all
   clear-output
-  create-zeleni 2                     ;; kreiraju se 2 rovera
-  create-smedji 2
+  create-predators 2
+  set coords[]
   set cords[]
-  ask zelen 0
+  wolf-road
+  set n true
+  ask predator 0
   [
-    set color green
+    set shape "wolf"
+    set color red
     setxy -8 -6          ;; prvi rover se postavlja u donju lijevu celiju
     set heading 90       ;; i okrece udesno
-  set food 0
-  ]
 
-  ask zelen 1
-  [
-    set color green
-    setxy -8 6            ;; drugi rover se postavlja u gornju desnu celiju
-    set heading 270      ;; i okrece ulijevo
-  set food2 0
   ]
-  ask smedj 2
+   ask predator 1
   [
-    set color brown
+    set shape "wolf"
+    set color orange
     setxy 8 6          ;; prvi rover se postavlja u donju lijevu celiju
-    set heading 90       ;; i okrece udesno
-  set food 0
+    set heading 270      ;; i okrece udesno
+
   ]
 
-  ask smedj 3
+  create-preys 3
   [
-    set color brown
-    setxy 8 -6            ;; drugi rover se postavlja u gornju desnu celiju
-    set heading 270      ;; i okrece ulijevo
-  set food2 0
+    set shape "sheep"
+    set color green
+    move-to one-of patches
+    set caught false
   ]
 
   ;; postavljanje "stijena" u okružanju
   reset-ticks
 end
 
-
-to crtaj
-  set randx random(17) - 8
-  set randy random(13) - 6
-  ask patch randx randy [ set pcolor red]
+to wolf-road
+  ask patches[
+    if pycor = -6 or pycor = 6 or pxcor = -8 or pxcor = 8
+    [
+    set pcolor  gray
+  ]]
 end
 
 to go
-  if food = 10 [
-    print "zeleni su pobjedili"
-  stop
-  ]
-  if food2 = 10 [
-    print "smedji su pobjedili"
-  stop
-  ]
 
-  if(ticks mod 10 = 0 and random(100) <= 10)[
-   crtaj
+  if(ticks mod 10 = 0 and random(100) <= 3)[
+   add-prey
     ]
-  ask zelen 0[
+  if any? preys[
+
+  ask preys [
 
       walk1
-  ]            ;; pokrece se funkcija walk1 za prvi rover
- ask zelen 1[
+  ]]
+  ask predator 0 [
+      walk2 ]
 
-      walk2
+  ask predator 1 [
+      walk3 ]
+
+    tick
+end
+
+
+to add-prey
+  create-preys 1
+  [
+    set shape "sheep"
+    set color green
+    set caught false
+    move-to one-of patches
   ]
-  ask smedj 2 [
-      walk3 ]            ;; pokrece se funkcija walk2 za drugi rover
- ask smedj 3 [
-      walk4 ]
-  tick
 end
 
 to walk1  ;; funkcija prvog rovera
-  if any? (patches in-radius 25 with [pcolor = red])[
-    let target-patch min-one-of (patches in-radius 25 with [pcolor = red]) [distance myself]
-  if target-patch != nobody  [
-    face target-patch
+  ifelse caught = false[
+  ifelse (xcor <= -7 or xcor >= 7 or ycor <= -5 or ycor >= 5)
+    [
+      set randy random(90)
+      set randx random(180) - randy
+      rt randx
+      fd 1
+
+    ][
     fd 1
-    if ([pcolor] of patch-here = red)[
-      wait 0.1
-      set food  food + 1
-        show food
-      ask patch-here[set pcolor black]
-    ]
+
+  ]][
+  stop
   ]
-    ]
+
+end
+
+to kraj
+  stop
 end
 
 to walk2  ;; funkcija prvog rovera
-  ifelse any? (patches in-radius 25 with [pcolor = red])[
-    let target-patch min-one-of (patches in-radius 25 with [pcolor = red]) [distance myself]
-  if target-patch != nobody  [
+  ifelse any? preys  in-radius 3 with [caught = false] [
+    let target-patch min-one-of preys-on patches in-radius 4 [distance myself]
+
     face target-patch
     fd 1
-    if ([pcolor] of patch-here = red)[
-      wait 0.1
-      set food  food + 1
-        show food
-      ask patch-here[set pcolor black]
+    if any? preys-on patches in-radius 1[
+      ask preys-on patches in-radius 1[
+
+set coords []
+        set coords lput xcor coords
+        set coords lput ycor coords
+        set cords lput coords cords
+        show cords
+      kraj
+      set caught true
+      ]
     ]
   ]
-    ]
+
   [
-    ifelse (xcor <= -7 or xcor >= 7 or ycor <= -5 or ycor >= 5)
+    if(xcor != 8 and xcor != -8 and ycor != 6 and ycor != -6)[
+      set xcor round(xcor)
+      set ycor round(ycor)
+    set heading 0
+  ]
+
+    if (xcor = 8 and ycor = -6)
     [
-      rt 70
+      rt 270
       fd 1
-    ][
+    ]
+  if (xcor = 8 and ycor = 6)
+    [
+      rt 270
+      fd 1
+    ]
+  if (xcor = -8 and ycor = 6)
+    [
+      rt 270
+      fd 1
+    ]
+    if (ycor = 6 and xcor != 8 and heading = 0)
+    [
+
+      set heading 270
+
+    ]
+  if (xcor = -8 and ycor = -6)
+    [
+      set heading 90
+      fd 1
+    ]
+
     fd 1
 
-    ]
+
   ]
+
+
 end
 
+to gnjezdo
+fd 1
+  rt 1
+end
 
 to walk3  ;; funkcija prvog rovera
-  if any? (patches in-radius 25 with [pcolor = red])[
-    let target-patch min-one-of (patches in-radius 25 with [pcolor = red]) [distance myself]
-  if target-patch != nobody  [
-    face target-patch
-    fd 1
-    if ([pcolor] of patch-here = red)[
-      wait 0.1
-      set food2  food2 + 1
-        show food2
-      ask patch-here[set pcolor black]
-    ]
-  ]
-    ]
-end
-
-to walk4  ;; funkcija prvog rovera
-  ifelse any? (patches in-radius 25 with [pcolor = red])[
-    let target-patch min-one-of (patches in-radius 25 with [pcolor = red]) [distance myself]
-  if target-patch != nobody  [
-    face target-patch
-    fd 1
-    if ([pcolor] of patch-here = red)[
-      wait 0.1
-      set food2  food2 + 1
-        show food2
-      ask patch-here[set pcolor black]
-    ]
-  ]
-    ]
+  ifelse (length(cords) != 0) [
+    set coords item 0 cords
+    set x-pos item 0 coords
+    set y-pos item 1 coords
+    facexy x-pos y-pos
+    ifelse (distancexy x-pos y-pos) > 1
   [
-    ifelse (xcor <= -7 or xcor >= 7 or ycor <= -5 or ycor >= 5)
-    [
-      rt 65
-      fd 1
-    ][
     fd 1
+  ][
+      fd distancexy x-pos y-pos
+    if any? preys-on patches in-radius 1[
+      ask preys-on patches in-radius 1[
+          set cords remove-item 0 cords
+      die
+      ]
+    ]]
 
-    ]
+  ]
+
+  [
+    rt 1
   ]
 end
 @#$#@#$#@
