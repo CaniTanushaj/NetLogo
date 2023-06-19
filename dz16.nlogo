@@ -1,10 +1,12 @@
 globals [
           templist
           cords
+          cords_b
           coords
   x-pos
               y-pos
-
+ x-pos_b
+              y-pos_b
               next_coords
               next_x-pos
               next_y-pos
@@ -20,14 +22,17 @@ globals [
 breed[predators predator]
 breed[preys prey]
 
-preys-own[caught]
+preys-own[caught_r
+          caught_b
+]
 
 to setup
   clear-all
   clear-output
-  create-predators 2
+  create-predators 4
   set coords[]
   set cords[]
+  set cords_b[]
   wolf-road
   set n true
   ask predator 0
@@ -48,12 +53,31 @@ to setup
 
   ]
 
-  create-preys 3
+  ask predator 2
+  [
+    set shape "wolf"
+    set color blue
+    setxy 8 -6          ;; prvi rover se postavlja u donju lijevu celiju
+    set heading 90       ;; i okrece udesno
+
+  ]
+   ask predator 3
+  [
+    set shape "wolf"
+    set color blue
+    set size 0.7
+    setxy -8 6          ;; prvi rover se postavlja u donju lijevu celiju
+    set heading 270      ;; i okrece udesno
+
+  ]
+
+  create-preys 2
   [
     set shape "sheep"
     set color green
     move-to one-of patches
-    set caught false
+    set caught_r false
+    set caught_b false
   ]
 
   ;; postavljanje "stijena" u okružanju
@@ -70,7 +94,7 @@ end
 
 to go
 
-  if(ticks mod 10 = 0 and random(100) <= 3)[
+  if(ticks mod 10 = 0 and random(100) <= 10)[
    add-prey
     ]
   if any? preys[
@@ -80,10 +104,16 @@ to go
       walk1
   ]]
   ask predator 0 [
-      walk2 ]
+      walk2r ]
 
   ask predator 1 [
-      walk3 ]
+      walk3r ]
+    ask predator 2 [
+      walk2b ]
+
+  ask predator 3 [
+      walk3b ]
+
 
     tick
 end
@@ -94,13 +124,14 @@ to add-prey
   [
     set shape "sheep"
     set color green
-    set caught false
+    set caught_r false
+    set caught_b false
     move-to one-of patches
   ]
 end
 
 to walk1  ;; funkcija prvog rovera
-  ifelse caught = false[
+  ifelse caught_r = false and caught_b = false[
   ifelse (xcor <= -7 or xcor >= 7 or ycor <= -5 or ycor >= 5)
     [
       set randy random(90)
@@ -121,8 +152,8 @@ to kraj
   stop
 end
 
-to walk2  ;; funkcija prvog rovera
-  ifelse any? preys  in-radius 3 with [caught = false] [
+to walk2r  ;; funkcija prvog rovera
+  ifelse any? preys  in-radius 3 with [caught_b = false and caught_r = false] [
     let target-patch min-one-of preys-on patches in-radius 4 [distance myself]
 
     face target-patch
@@ -130,13 +161,106 @@ to walk2  ;; funkcija prvog rovera
     if any? preys-on patches in-radius 1[
       ask preys-on patches in-radius 1[
 
-        if caught = false [set coords []
+        if caught_r = false [set coords []
         set coords lput xcor coords
         set coords lput ycor coords
         set cords lput coords cords
+          show "crveni"
           show cords]
       kraj
-      set caught true
+      set caught_r true
+      ]
+    ]
+  ]
+
+  [
+    if(xcor != 8 and xcor != -8 and ycor != 6 and ycor != -6)[
+      set xcor round(xcor)
+      set ycor round(ycor)
+    set heading 0
+  ]
+
+    if (xcor = 8 and ycor = -6)
+    [
+      rt 270
+      fd 1
+    ]
+  if (xcor = 8 and ycor = 6)
+    [
+      rt 270
+      fd 1
+    ]
+  if (xcor = -8 and ycor = 6)
+    [
+      rt 270
+      fd 1
+    ]
+    if (ycor = 6 and xcor != 8 and heading = 0)
+    [
+
+      set heading 270
+
+    ]
+  if (xcor = -8 and ycor = -6)
+    [
+      set heading 90
+      fd 1
+    ]
+
+    fd 1
+
+
+  ]
+
+
+end
+
+
+
+to walk3r  ;; funkcija prvog rovera
+  ifelse (length(cords) != 0) [
+    set coords item 0 cords
+    set x-pos item 0 coords
+    set y-pos item 1 coords
+    facexy x-pos y-pos
+    ifelse (distancexy x-pos y-pos) > 1
+  [
+    fd 1
+  ][
+      fd distancexy x-pos y-pos
+    if any? preys-on patches in-radius 1[
+      ask preys-on patches in-radius 1[
+          set cords remove-item 0 cords
+      die
+      ]
+    ]]
+
+  ]
+
+  [
+    rt 1
+  ]
+end
+
+
+
+to walk2b  ;; funkcija prvog rovera
+  ifelse any? preys  in-radius 3 with [caught_b = false and caught_r = false] [
+    let target-patch min-one-of preys-on patches in-radius 4 [distance myself]
+
+    face target-patch
+    fd 1
+    if any? preys-on patches in-radius 1[
+      ask preys-on patches in-radius 1[
+
+        if caught_r = false [set coords []
+        set coords lput xcor coords
+        set coords lput ycor coords
+        set cords_b lput coords cords_b
+          show "plavi"
+          show cords_b]
+      kraj
+      set caught_b true
       ]
     ]
   ]
@@ -188,20 +312,21 @@ fd 1
   rt 1
 end
 
-to walk3  ;; funkcija prvog rovera
-  ifelse (length(cords) != 0) [
-    set coords item 0 cords
-    set x-pos item 0 coords
-    set y-pos item 1 coords
-    facexy x-pos y-pos
-    ifelse (distancexy x-pos y-pos) > 1
+to walk3b  ;; funkcija prvog rovera
+  ifelse (length(cords_b) != 0) [
+    set coords []
+    set coords item 0 cords_b
+    set x-pos_b item 0 coords
+    set y-pos_b item 1 coords
+    facexy x-pos_b y-pos_b
+    ifelse (distancexy x-pos_b y-pos_b) > 1
   [
     fd 1
   ][
-      fd distancexy x-pos y-pos
+      fd distancexy x-pos_b y-pos_b
     if any? preys-on patches in-radius 1[
       ask preys-on patches in-radius 1[
-          set cords remove-item 0 cords
+          set cords_b remove-item 0 cords_b
       die
       ]
     ]]
